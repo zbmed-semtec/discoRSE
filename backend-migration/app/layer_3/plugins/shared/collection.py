@@ -208,8 +208,13 @@ class GitPlatformLicenseExtractor(GitPlatformBaseExtractor):
         citations = client.get_parsed_citations()
         for citation in citations:
             if 'license' in citation:
-                license_value = citation.get('license')
-                if license_value:
+                # CITATION.cff allows one license or a list of licenses.
+                license_values = citation.get('license')
+                if not isinstance(license_values, list):
+                    license_values = [license_values]
+                for license_value in license_values:
+                    if not license_value:
+                        continue
                     result = match_license_text(license_value)
                     spdx_id = result["detected_license_expression_spdx"]
                     conf    = result["percentage_of_license_text"] * 0.85 / 100.0
@@ -231,6 +236,7 @@ class GitPlatformLicenseExtractor(GitPlatformBaseExtractor):
                     state.metadata_collector.collect(
                         "CFF File", 'https://schema.org/license', license_object, conf
                     )
+            # 
             if 'license-url' in citation:
                 license_url = citation.get('license-url')
                 if license_url:
